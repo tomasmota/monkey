@@ -60,7 +60,7 @@ func (l *Lexer) nextToken() token.Token {
 			fmt.Println(tok.Literal)
 			fmt.Println(tok.Type)
 			return tok
-		} else {
+		} else { // 34f left off adding digit parsing here
 			tok = newToken(token.ILLEGAL, l.ch)
 		}
 	}
