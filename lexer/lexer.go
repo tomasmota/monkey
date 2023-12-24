@@ -18,10 +18,10 @@ func New(input string) *Lexer {
 }
 
 func (l *Lexer) readChar() {
-	if l.position >= len(l.input) {
+	if l.readPosition >= len(l.input) {
 		l.ch = 0
 	} else {
-		l.ch = l.input[l.position]
+		l.ch = l.input[l.readPosition]
 	}
 	l.position = l.readPosition
 	l.readPosition += 1
@@ -29,7 +29,6 @@ func (l *Lexer) readChar() {
 
 func (l *Lexer) nextToken() token.Token {
     var tok token.Token
-
     switch l.ch {
     case '=':
         tok = newToken(token.ASSIGN, l.ch)
@@ -51,6 +50,8 @@ func (l *Lexer) nextToken() token.Token {
         tok.Literal = ""
         tok.Type = token.EOF
     }
+
+    l.readChar()
     
     return tok
 }
