@@ -122,7 +122,7 @@ if (5 < 10) {
 		tok := l.nextToken()
 
 		if tok.Type != tt.expectedType {
-			t.Fatalf("tests[%d] - tokentype wrong. expected=%q, got=%q", i, tt.expectedType, tok.Type)
+			t.Fatalf("tests[%d] - tokentype wrong. expected=(%q, %q), got=(%q, %q)", i, tt.expectedType, tt.expectedLiteral, tok.Type, tok.Literal)
 		}
 
 		if tok.Literal != tt.expectedLiteral {
