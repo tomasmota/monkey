@@ -35,7 +35,7 @@ func (l *Lexer) peekChar() byte {
 	}
 }
 
-func (l *Lexer) nextToken() token.Token {
+func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
 	l.skipWhitespace()
