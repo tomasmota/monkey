@@ -6,6 +6,19 @@ import (
 	"testing"
 )
 
+func checkParserErrors(t *testing.T, p Parser) {
+	errors := p.Errors()
+	if len(errors) == 0 {
+		return
+	}
+
+	t.Errorf("parser has %d errors", len(errors))
+	for _, err := range errors {
+		t.Errorf("parser error: %q", err)
+	}
+	t.FailNow()
+}
+
 func TestLetStatements(t *testing.T) {
 	input := `
 let x = 5;
@@ -104,15 +117,31 @@ return 1123123;
 	}
 }
 
-func checkParserErrors(t *testing.T, p Parser) {
-	errors := p.Errors()
-	if len(errors) == 0 {
-		return
+func TestIdentifierExpression(t *testing.T) {
+	input := `foobar;`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, *p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain 1 statement. got=%d", len(program.Statements))
 	}
 
-	t.Errorf("parser has %d errors", len(errors))
-	for _, err := range errors {
-		t.Errorf("parser error: %q", err)
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Errorf("expected program.Statements[0] to be an *ast.ExpressionStatement. got=%T", stmt)
 	}
-	t.FailNow()
+
+    ident, ok := stmt.Expression.(*ast.Identifier)
+	if !ok {
+		t.Errorf("expression is not and Identifier. got=%T", stmt)
+	}
+    if ident.Value != "foobar" {
+        t.Errorf("ident.Value not %s. got=%s", "foobar", ident.Value)
+    }
+    if ident.TokenLiteral() != "foobar" {
+        t.Errorf("ident.TokenLiteral not %s. got=%s", "foobar", ident.Value)
+    }
 }
