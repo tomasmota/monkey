@@ -5,6 +5,7 @@ import (
 	"monkey/ast"
 	"monkey/lexer"
 	"monkey/token"
+	"strconv"
 )
 
 // These constants define our operator precedence
@@ -38,9 +39,12 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
+	p.registerPrefix(token.INT, p.parseIntegerLiteral)
+	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
+	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 
-	p.NextToken()
-	p.NextToken()
+    p.NextToken()
+    p.NextToken()
 
 	return p
 }
@@ -123,6 +127,22 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 	return stmt
 }
 
+// ****** Integer Literal Parsing ******//
+func (p *Parser) parseIntegerLiteral() ast.Expression {
+	il := &ast.IntegerLiteral{Token: p.curToken}
+
+	value, err := strconv.ParseInt(p.curToken.Literal, 0, 64)
+	if err != nil {
+		msg := fmt.Sprintf("could not parse %q as integer", p.curToken.Literal)
+		p.errors = append(p.errors, msg)
+		return nil
+	}
+	il.Value = value
+	return il
+}
+
+// *************************************//
+
 // ****** Expression Parsing ******//
 type (
 	prefixParseFn func() ast.Expression
@@ -140,6 +160,8 @@ func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
 func (p *Parser) parseExpression(precedence int) ast.Expression {
 	prefix := p.prefixParseFns[p.curToken.Type]
 	if prefix == nil {
+        fmt.Printf("what %q", p.curToken)
+		p.noPrefixParseFnError(p.curToken.Type)
 		return nil
 	}
 	leftExp := prefix()
@@ -151,6 +173,20 @@ func (p *Parser) parseIdentifier() ast.Expression {
 }
 
 // ********************************//
+
+// ****** Parsing Prefix Expressions ******//
+func (p *Parser) parsePrefixExpression() ast.Expression {
+	pe := &ast.PrefixExpression{
+        Token: p.curToken,
+        Operator: p.curToken.Literal,
+    }
+	p.NextToken()
+
+	pe.Right = p.parseExpression(PREFIX)
+	return pe
+}
+
+// ****************************************//
 
 // ****** Utility Methods ******//
 func (p *Parser) curTokenIs(t token.TokenType) bool {
@@ -175,6 +211,11 @@ func (p *Parser) peekError(t token.TokenType) {
 	msg := fmt.Sprintf("expected next token to be %s. got=%s", t, p.peekToken.Type)
 	p.errors = append(p.errors, msg)
 
+}
+
+func (p *Parser) noPrefixParseFnError(t token.TokenType) {
+	msg := fmt.Sprintf("no prefix parse function for %s", t)
+	p.errors = append(p.errors, msg)
 }
 
 // ****************************//
