@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func checkParserErrors(t *testing.T, p Parser) {
+func checkParserErrors(t *testing.T, p *Parser) {
 	errors := p.Errors()
 	if len(errors) == 0 {
 		return
@@ -31,7 +31,7 @@ let foobar = 123123;
 	p := New(l)
 
 	program := p.ParseProgram()
-	checkParserErrors(t, *p)
+	checkParserErrors(t, p)
 
 	if program == nil {
 		t.Fatal("ParseProgram() returned nil")
@@ -98,7 +98,7 @@ return 1123123;
 	p := New(l)
 
 	program := p.ParseProgram()
-	checkParserErrors(t, *p)
+	checkParserErrors(t, p)
 
 	if len(program.Statements) != 3 {
 		t.Fatalf("program.Statements does not contain 3 statements. got=%d", len(program.Statements))
@@ -124,7 +124,7 @@ func TestIdentifierExpression(t *testing.T) {
 	l := lexer.New(input)
 	p := New(l)
 	program := p.ParseProgram()
-	checkParserErrors(t, *p)
+	checkParserErrors(t, p)
 
 	if len(program.Statements) != 1 {
 		t.Fatalf("program.Statements does not contain 1 statement. got=%d", len(program.Statements))
@@ -153,7 +153,7 @@ func TestIntegerLiteral(t *testing.T) {
 	l := lexer.New(input)
 	p := New(l)
 	program := p.ParseProgram()
-	checkParserErrors(t, *p)
+	checkParserErrors(t, p)
 
 	if len(program.Statements) != 1 {
 		t.Fatalf("program.Statements does not contain 1 statement. got=%d", len(program.Statements))
@@ -190,7 +190,7 @@ func TestParsingPrefixExpressions(t *testing.T) {
         l := lexer.New(tt.input)
         p := New(l)
         program := p.ParseProgram()
-        checkParserErrors(t, *p)
+        checkParserErrors(t, p)
 
         if len(program.Statements) != 1 {
             t.Fatalf("program.Statements does not contain 1 statement. got=%d", len(program.Statements))
@@ -252,7 +252,7 @@ func TestParsingInfixExpressions(t *testing.T) {
         l := lexer.New(tt.input)
         p := New(l)
         program := p.ParseProgram()
-        checkParserErrors(t, *p)
+        checkParserErrors(t, p)
 
         if len(program.Statements) != 1 {
             t.Fatalf("program.Statements does not contain 1 statement. got=%d", len(program.Statements))
@@ -278,3 +278,72 @@ func TestParsingInfixExpressions(t *testing.T) {
         }
     }
 }
+
+func TestOperatorPrecedenceParsing(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			"-a * b",
+			"((-a) * b)",
+		},
+		{
+			"!-a",
+			"(!(-a))",
+		},
+		{
+			"a + b + c",
+			"((a + b) + c)",
+		},
+		{
+			"a + b - c",
+			"((a + b) - c)",
+		},
+		{
+			"a * b * c",
+			"((a * b) * c)",
+		},
+		{
+			"a * b / c",
+			"((a * b) / c)",
+		},
+		{
+			"a + b / c",
+			"(a + (b / c))",
+		},
+		{
+			"a + b * c + d / e - f",
+			"(((a + (b * c)) + (d / e)) - f)",
+		},
+		{
+			"3 + 4; -5 * 5",
+			"(3 + 4)((-5) * 5)",
+		},
+		{
+			"5 > 4 == 3 < 4",
+			"((5 > 4) == (3 < 4))",
+		},
+		{
+			"5 < 4 != 3 > 4",
+			"((5 < 4) != (3 > 4))",
+		},
+		{
+			"3 + 4 * 5 == 3 * 1 + 4 * 5",
+			"((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+		},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+
+		actual := program.String()
+		if actual != tt.expected {
+			t.Errorf("expected=%q, got=%q", tt.expected, actual)
+		}
+	}
+}
+
