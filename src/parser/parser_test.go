@@ -196,8 +196,6 @@ func TestParsingPrefixExpressions(t *testing.T) {
 			t.Fatalf("program.Statements does not contain 1 statement. got=%d", len(program.Statements))
 		}
 
-
-
 		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
 		if !ok {
 			t.Errorf("expected program.Statements[0] to be an *ast.ExpressionStatement. got=%T", stmt)
@@ -264,25 +262,25 @@ func testLiteralExpression(t *testing.T, exp ast.Expression, expected interface{
 }
 
 func testInfixExpression(t *testing.T, exp ast.Expression, left interface{}, operator string, right interface{}) bool {
-    opExp, ok := exp.(*ast.InfixExpression)
+	opExp, ok := exp.(*ast.InfixExpression)
 	if !ok {
 		t.Errorf("exp is not *ast.InfixExpression. got=%T", exp)
 		return false
 	}
-    if !testLiteralExpression(t, opExp.Left, left) {
-        return false
-    }
+	if !testLiteralExpression(t, opExp.Left, left) {
+		return false
+	}
 
-    if opExp.Operator != operator {
-        t.Errorf("expected exp.Operator to be '%s'. got=%s", operator, opExp.Operator)
-        return false
-    }
+	if opExp.Operator != operator {
+		t.Errorf("expected exp.Operator to be '%s'. got=%s", operator, opExp.Operator)
+		return false
+	}
 
-    if !testLiteralExpression(t, opExp.Right, right) {
-        return false
-    }
+	if !testLiteralExpression(t, opExp.Right, right) {
+		return false
+	}
 
-    return true
+	return true
 }
 
 func TestParsingInfixExpressions(t *testing.T) {
@@ -388,6 +386,40 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		actual := program.String()
 		if actual != tt.expected {
 			t.Errorf("expected=%q, got=%q", tt.expected, actual)
+		}
+	}
+}
+
+func TestBooleanExpression(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{"true;", true},
+		{"false;", false},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements does not contain 1 statement. got=%d", len(program.Statements))
+		}
+
+		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			t.Errorf("expected program.Statements[0] to be an *ast.ExpressionStatement. got=%T", stmt)
+		}
+
+		boolExp, ok := stmt.Expression.(*ast.Boolean)
+		if !ok {
+			t.Errorf("expression is not a Boolean. got=%T", boolExp)
+		}
+		if boolExp.Value != tt.expected {
+			t.Errorf("boolExp.Value not %t. got=%t", tt.expected, boolExp.Value)
 		}
 	}
 }
