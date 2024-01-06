@@ -56,6 +56,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.TRUE, p.parseBoolean)
 	p.registerPrefix(token.FALSE, p.parseBoolean)
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
+	p.registerPrefix(token.IF, p.parseIfExpression)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
@@ -247,11 +248,69 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 // ****** Parsing Grouped Expressions ******//
 func (p *Parser) parseGroupedExpression() ast.Expression {
 	p.NextToken()
-    exp := p.parseExpression(LOWEST)
-    if !p.expectPeek(token.RPAREN) {
-        return nil
-    }
+	exp := p.parseExpression(LOWEST)
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
 	return exp
+}
+
+// ****************************************//
+
+// ****** Parsing If Expressions ******//
+func (p *Parser) parseIfExpression() ast.Expression {
+	exp := &ast.IfExpression{Token: p.curToken}
+
+	// check '('
+	if !p.expectPeek(token.LPAREN) {
+		return nil
+	}
+    p.NextToken()
+
+	exp.Condition = p.parseExpression(LOWEST)
+
+	// check ')' after condition
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+
+	// check '{' to start if block
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	exp.Consequence = p.parseBlockStatement()
+
+    if p.peekTokenIs(token.ELSE) {
+        p.NextToken()
+
+        // check '{' to start if block
+        if !p.expectPeek(token.LBRACE) {
+            return nil
+        }
+
+        exp.Alternative = p.parseBlockStatement()
+    }
+
+	return exp
+}
+
+// ****************************************//
+
+// ****** Parsing Block statements ******//
+func (p *Parser) parseBlockStatement() *ast.BlockStatement {
+	block := &ast.BlockStatement{Token: p.curToken}
+	block.Statements = []ast.Statement{}
+
+	p.NextToken()
+
+	for !p.curTokenIs(token.RBRACE) && !p.curTokenIs(token.EOF) {
+		stmt := p.parseStatement()
+		block.Statements = append(block.Statements, stmt)
+		p.NextToken()
+	}
+
+	return block
 }
 
 // ****************************************//
