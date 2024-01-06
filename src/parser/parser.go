@@ -57,6 +57,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.FALSE, p.parseBoolean)
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
 	p.registerPrefix(token.IF, p.parseIfExpression)
+	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
@@ -311,6 +312,56 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	}
 
 	return block
+}
+
+// ****************************************//
+
+// ****** Parsing Functions ******//
+// e.g. fn(x, y) { x + y; }
+func (p *Parser) parseFunctionLiteral() ast.Expression {
+	f := &ast.FunctionLiteral{Token: p.curToken}
+
+	// check '('
+    if !p.expectPeek(token.LPAREN) {
+        return nil
+    }
+
+    f.Params = p.parseFunctionParameters()
+
+	// check '{' before body block
+    if !p.expectPeek(token.LBRACE) {
+        return nil
+    }
+
+    f.Body = p.parseBlockStatement()
+    return f
+}
+
+func (p *Parser) parseFunctionParameters() []*ast.Identifier {
+    params := []*ast.Identifier{}
+
+	// check if there are no params
+    if p.peekTokenIs(token.RPAREN) {
+        p.NextToken()
+        return params
+    }
+
+    // skip '('
+    p.NextToken()
+    ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal} 
+    params = append(params, ident)
+    for p.peekTokenIs(token.COMMA){
+        p.NextToken() // go to comma
+        p.NextToken() // skip comma
+        ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal} 
+        params = append(params, ident)
+    }
+
+	// make sure it ends with ')'
+    if !p.expectPeek(token.RPAREN) {
+            return nil
+    }
+    return params
 }
 
 // ****************************************//
