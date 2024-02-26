@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"monkey/evaluator"
 	"monkey/lexer"
 	"monkey/parser"
 )
@@ -29,11 +30,14 @@ func Start(in io.Reader, out io.Writer) {
 
 		if len(p.Errors()) != 0 {
 			printParserErrors(out, p.Errors())
-            continue
+			continue
 		}
 
-        io.WriteString(out, program.String())
-        io.WriteString(out, "\n")
+		evaluated := evaluator.Eval(program)
+		if evaluated != nil {
+			io.WriteString(out, evaluated.Inspect())
+			io.WriteString(out, "\n")
+		}
 	}
 }
 
@@ -58,4 +62,3 @@ func printParserErrors(out io.Writer, errors []string) {
 		io.WriteString(out, "\t"+msg+"\n")
 	}
 }
-
