@@ -1,6 +1,7 @@
 package evaluator
 
 import (
+	"fmt"
 	"monkey/ast"
 	"monkey/object"
 )
@@ -33,9 +34,9 @@ func Eval(node ast.Node) object.Object {
 	case *ast.InfixExpression:
 		left := Eval(node.Left)
 		right := Eval(node.Right)
-		return evalInfixExpression(node.Operator, left,right)
+		fmt.Println(node.Operator)
+		return evalInfixExpression(node.Operator, left, right)
 	}
-
 
 	return nil
 }
@@ -91,12 +92,33 @@ func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
 }
 
 func evalInfixExpression(operator string, left, right object.Object) object.Object {
+		fmt.Println("wat")
+		fmt.Println(left.Type())
 	switch {
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
+		fmt.Println("eq ints")
 		return evalIntegerInfixExpression(operator, left, right)
+	case operator == "==":
+		return nativeBoolToBooleanObject(left == right)
+	case operator == "!=":
+		return nativeBoolToBooleanObject(left != right)
 	default:
 		return NULL
-	} 
+	}
+}
+
+func evalBooleanInfixExpression(operator string, left, right object.Object) object.Object {
+	leftVal := left.(*object.Boolean).Value
+	rightVal := right.(*object.Boolean).Value
+
+	switch operator {
+	case "==":
+		return nativeBoolToBooleanObject(leftVal == rightVal)
+	case "!=":
+		return nativeBoolToBooleanObject(leftVal != rightVal)
+	default:
+		return NULL
+	}
 }
 
 func evalIntegerInfixExpression(operator string, left object.Object, right object.Object) object.Object {
@@ -112,9 +134,15 @@ func evalIntegerInfixExpression(operator string, left object.Object, right objec
 		return &object.Integer{Value: leftVal * rightVal}
 	case "/":
 		return &object.Integer{Value: leftVal / rightVal}
+	case ">":
+		return nativeBoolToBooleanObject(leftVal > rightVal)
+	case "<":
+		return nativeBoolToBooleanObject(leftVal < rightVal)
+	case "==":
+		return nativeBoolToBooleanObject(leftVal == rightVal)
+	case "!=":
+		return nativeBoolToBooleanObject(leftVal != rightVal)
 	default:
 		return NULL
 	}
 }
-
-
