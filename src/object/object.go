@@ -27,7 +27,7 @@ type Boolean struct {
 }
 
 func (b *Boolean) Inspect() string { return fmt.Sprintf("%t", b.Value) }
-func (b *Boolean) Type() ObjectType    { return INTEGER_OBJ }
+func (b *Boolean) Type() ObjectType    { return BOOLEAN_OBJ }
 
 type Null struct {
 }
