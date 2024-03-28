@@ -41,4 +41,4 @@ type ReturnValue struct {
 }
 
 func (rv *ReturnValue) Inspect() string  { return rv.Value.Inspect() }
-func (rv *ReturnValue) Type() ObjectType { return BOOLEAN_OBJ }
+func (rv *ReturnValue) Type() ObjectType { return RETURN_VALUE_OBJ }
