@@ -1,6 +1,7 @@
 package evaluator
 
 import (
+	"fmt"
 	"monkey/ast"
 	"monkey/object"
 )
@@ -47,6 +48,10 @@ func Eval(node ast.Node) object.Object {
 	}
 
 	return nil
+}
+
+func newError(format string, s ...interface{}) *object.Error {
+    return &object.Error{Message: fmt.Sprintf(format, s...)}
 }
 
 func evalIfExpression(node *ast.IfExpression) object.Object {
@@ -113,7 +118,7 @@ func evalPrefixExpression(operator string, right object.Object) object.Object {
 	case "-":
 		return evalMinusPrefixOperatorExpression(right)
 	default:
-		return NULL
+        return newError("unknown operator: %s%s", operator, right.Type())
 	}
 }
 
@@ -132,7 +137,7 @@ func evalBangOperatorExpression(right object.Object) object.Object {
 
 func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
 	if right.Type() != object.INTEGER_OBJ {
-		return NULL
+        return newError("unknown operator: -%s", right.Type())
 	}
 
 	value := right.(*object.Integer).Value
@@ -149,22 +154,10 @@ func evalInfixExpression(operator string, left, right object.Object) object.Obje
 		return nativeBoolToBooleanObject(left == right)
 	case operator == "!=":
 		return nativeBoolToBooleanObject(left != right)
+    case left.Type() != right.Type():
+        return newError("type mismatch: %s %s %s", left.Type(), operator, right.Type())
 	default:
-		return NULL
-	}
-}
-
-func evalBooleanInfixExpression(operator string, left, right object.Object) object.Object {
-	leftVal := left.(*object.Boolean).Value
-	rightVal := right.(*object.Boolean).Value
-
-	switch operator {
-	case "==":
-		return nativeBoolToBooleanObject(leftVal == rightVal)
-	case "!=":
-		return nativeBoolToBooleanObject(leftVal != rightVal)
-	default:
-		return NULL
+        return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
 	}
 }
 
@@ -190,6 +183,6 @@ func evalIntegerInfixExpression(operator string, left object.Object, right objec
 	case "!=":
 		return nativeBoolToBooleanObject(leftVal != rightVal)
 	default:
-		return NULL
+        return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
 	}
 }
