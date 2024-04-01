@@ -213,7 +213,7 @@ if (10 > 1) {
 		},
 		{
 			"foobar",
-            "identifier not found: foobar",
+			"identifier not found: foobar",
 		},
 	}
 
@@ -245,7 +245,28 @@ func TestLetStatement(t *testing.T) {
 		{"let a = 5; let b = a; let c = a + b + 5; c", 15},
 	}
 
-    for _, tt:= range tests {
-        testIntegerObject(t, testEval(tt.input), tt.expected)
-    }
+	for _, tt := range tests {
+		testIntegerObject(t, testEval(tt.input), tt.expected)
+	}
+}
+
+func TestFunctionObject(t *testing.T) {
+	input := "fn(x) { x + 2;}"
+	evaluated := testEval(input)
+
+	fn, ok := evaluated.(*object.Function)
+	if !ok {
+		t.Fatalf("object is not Function. got=%T (%v)", evaluated, evaluated)
+	}
+	if len(fn.Parameters) != 1 {
+		t.Fatalf("function has wrong parameters. Parameters=%+v", fn.Parameters)
+	}
+	if fn.Parameters[0].String() != "x" {
+		t.Fatalf("parameter is not 'x'. got=%q", fn.Parameters[0])
+	}
+
+	expectedBody := "(x + 2)"
+	if fn.Body.String() != expectedBody {
+		t.Fatalf("body is not %s.. got=%s", expectedBody, fn.Body.String())
+	}
 }
