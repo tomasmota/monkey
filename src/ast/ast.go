@@ -109,7 +109,7 @@ func (es *ExpressionStatement) String() string {
 	return ""
 }
 
-// integer literal statement
+// integer literal
 type IntegerLiteral struct {
 	Token token.Token // token.INT
 	Value int64
@@ -226,42 +226,50 @@ func (fl *FunctionLiteral) TokenLiteral() string { return fl.Token.Literal }
 func (fl *FunctionLiteral) String() string {
 	var out bytes.Buffer
 
-    params := []string{}
+	params := []string{}
 	for _, param := range fl.Params {
-        params = append(params, param.String())
+		params = append(params, param.String())
 	}
 
 	out.WriteString("fn")
 	out.WriteString("(")
-    out.WriteString(strings.Join(params, ", "))
+	out.WriteString(strings.Join(params, ", "))
 	out.WriteString(")")
 	out.WriteString(fl.Body.String())
 
 	return out.String()
 }
 
-// Function Calls 
+// Function Calls
 type CallExpression struct {
-	Token  token.Token // token.LPAREN
-    Function Expression // Identifier or FunctionLiteral
+	Token     token.Token // token.LPAREN
+	Function  Expression  // Identifier or FunctionLiteral
 	Arguments []Expression
 }
-
 
 func (ce *CallExpression) expressionNode()      {}
 func (ce *CallExpression) TokenLiteral() string { return ce.Token.Literal }
 func (ce *CallExpression) String() string {
 	var out bytes.Buffer
 
-    args := []string{}
+	args := []string{}
 	for _, arg := range ce.Arguments {
-        args = append(args, arg.String())
+		args = append(args, arg.String())
 	}
 
 	out.WriteString(ce.Function.String())
 	out.WriteString("(")
-    out.WriteString(strings.Join(args, ", "))
+	out.WriteString(strings.Join(args, ", "))
 	out.WriteString(")")
 
 	return out.String()
 }
+
+type StringLiteral struct {
+	Token token.Token // token.STRING
+	Value string
+}
+
+func (sl *StringLiteral) expressionNode()      {}
+func (sl *StringLiteral) TokenLiteral() string { return sl.Token.Literal }
+func (sl *StringLiteral) String() string       { return sl.Token.Literal }

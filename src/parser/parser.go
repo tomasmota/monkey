@@ -59,6 +59,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
 	p.registerPrefix(token.IF, p.parseIfExpression)
 	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
+	p.registerPrefix(token.STRING, p.parseStringLiteral)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
@@ -70,7 +71,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.EQ, p.parseInfixExpression)
 	p.registerInfix(token.NOT_EQ, p.parseInfixExpression)
 
-    p.registerInfix(token.LPAREN, p.parseCallExpression)
+	p.registerInfix(token.LPAREN, p.parseCallExpression)
 
 	p.NextToken()
 	p.NextToken()
@@ -123,17 +124,17 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		Value: p.curToken.Literal,
 	}
 
-    if !p.expectPeek(token.ASSIGN) {
-        return nil
-    }
+	if !p.expectPeek(token.ASSIGN) {
+		return nil
+	}
 
-    p.NextToken()
+	p.NextToken()
 
-    stmt.Value = p.parseExpression(LOWEST)
+	stmt.Value = p.parseExpression(LOWEST)
 
-    if p.peekTokenIs(token.SEMICOLON) {
-        p.NextToken()
-    }
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.NextToken()
+	}
 
 	return stmt
 }
@@ -143,7 +144,7 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 
 	p.NextToken()
 
-    stmt.ReturnValue = p.parseExpression(LOWEST)
+	stmt.ReturnValue = p.parseExpression(LOWEST)
 
 	// TODO: skip until semicolon for now
 	if !p.curTokenIs(token.SEMICOLON) {
@@ -187,6 +188,16 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 }
 
 // *************************************//
+
+// ****** String Literal Parsing ******//
+func (p *Parser) parseStringLiteral() ast.Expression {
+	return &ast.StringLiteral{
+		Token: p.curToken,
+		Value: p.curToken.Literal,
+	}
+}
+
+// ************************************//
 
 // ****** Expression Parsing ******//
 type (
@@ -278,7 +289,7 @@ func (p *Parser) parseIfExpression() ast.Expression {
 	if !p.expectPeek(token.LPAREN) {
 		return nil
 	}
-    p.NextToken()
+	p.NextToken()
 
 	exp.Condition = p.parseExpression(LOWEST)
 
@@ -294,16 +305,16 @@ func (p *Parser) parseIfExpression() ast.Expression {
 
 	exp.Consequence = p.parseBlockStatement()
 
-    if p.peekTokenIs(token.ELSE) {
-        p.NextToken()
+	if p.peekTokenIs(token.ELSE) {
+		p.NextToken()
 
-        // check '{' to start if block
-        if !p.expectPeek(token.LBRACE) {
-            return nil
-        }
+		// check '{' to start if block
+		if !p.expectPeek(token.LBRACE) {
+			return nil
+		}
 
-        exp.Alternative = p.parseBlockStatement()
-    }
+		exp.Alternative = p.parseBlockStatement()
+	}
 
 	return exp
 }
@@ -334,47 +345,48 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 	f := &ast.FunctionLiteral{Token: p.curToken}
 
 	// check '('
-    if !p.expectPeek(token.LPAREN) {
-        return nil
-    }
+	if !p.expectPeek(token.LPAREN) {
+		return nil
+	}
 
-    f.Params = p.parseFunctionParameters()
+	f.Params = p.parseFunctionParameters()
 
 	// check '{' before body block
-    if !p.expectPeek(token.LBRACE) {
-        return nil
-    }
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
 
-    f.Body = p.parseBlockStatement()
-    return f
+	f.Body = p.parseBlockStatement()
+	return f
 }
 
 func (p *Parser) parseFunctionParameters() []*ast.Identifier {
-    params := []*ast.Identifier{}
+	params := []*ast.Identifier{}
 
 	// check if there are no params
-    if p.peekTokenIs(token.RPAREN) {
-        p.NextToken()
-        return params
-    }
+	if p.peekTokenIs(token.RPAREN) {
+		p.NextToken()
+		return params
+	}
 
-    // skip '('
-    p.NextToken()
-    ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal} 
-    params = append(params, ident)
-    for p.peekTokenIs(token.COMMA){
-        p.NextToken() // go to comma
-        p.NextToken() // skip comma
-        ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal} 
-        params = append(params, ident)
-    }
+	// skip '('
+	p.NextToken()
+	ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+	params = append(params, ident)
+	for p.peekTokenIs(token.COMMA) {
+		p.NextToken() // go to comma
+		p.NextToken() // skip comma
+		ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+		params = append(params, ident)
+	}
 
 	// make sure it ends with ')'
-    if !p.expectPeek(token.RPAREN) {
-            return nil
-    }
-    return params
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+	return params
 }
+
 // ****************************************//
 
 // ****** Parsing Function Calls ******//
@@ -385,29 +397,30 @@ func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 }
 
 func (p *Parser) parseCallArguments() []ast.Expression {
-    args := []ast.Expression{}
+	args := []ast.Expression{}
 
 	// check if there are no args
-    if p.peekTokenIs(token.RPAREN) {
-        p.NextToken()
-        return args
-    }
+	if p.peekTokenIs(token.RPAREN) {
+		p.NextToken()
+		return args
+	}
 
-    // skip '('
-    p.NextToken()
-    args = append(args, p.parseExpression(LOWEST))
-    for p.peekTokenIs(token.COMMA){
-        p.NextToken() // go to comma
-        p.NextToken() // skip comma
-        args = append(args, p.parseExpression(LOWEST))
-    }
+	// skip '('
+	p.NextToken()
+	args = append(args, p.parseExpression(LOWEST))
+	for p.peekTokenIs(token.COMMA) {
+		p.NextToken() // go to comma
+		p.NextToken() // skip comma
+		args = append(args, p.parseExpression(LOWEST))
+	}
 
 	// make sure it ends with ')'
-    if !p.expectPeek(token.RPAREN) {
-            return nil
-    }
-    return args
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+	return args
 }
+
 // ****************************************//
 
 // ****** Utility Methods ******//
