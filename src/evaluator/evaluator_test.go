@@ -215,6 +215,10 @@ if (10 > 1) {
 			"foobar",
 			"identifier not found: foobar",
 		},
+		{
+			`"Hello" - "World!"`,
+			"unknown operator: STRING - STRING",
+		},
 	}
 
 	for _, tt := range tests {
@@ -299,4 +303,30 @@ addTwo(2);`
 
 	testIntegerObject(t, testEval(input), 4)
 
+}
+
+func TestStringLiteral(t *testing.T) {
+	input := `"hello world";`
+
+	evaluated := testEval(input)
+	s, ok := evaluated.(*object.String)
+	if !ok {
+		t.Fatalf("object is not a string. got=%T (%+v)", evaluated, evaluated)
+	}
+	if s.Value != "hello world" {
+		t.Fatalf("string value is not 'hello world'. got=%s", s.Value)
+	}
+}
+
+func TestStringConcatenation(t *testing.T) {
+	input := `"Hello" + " " + "World!"`
+
+	evaluated := testEval(input)
+	s, ok := evaluated.(*object.String)
+	if !ok {
+		t.Fatalf("object is not a string. got=%T (%+v)", evaluated, evaluated)
+	}
+	if s.Value != "Hello World!" {
+		t.Fatalf("string value is not 'hello world'. got=%s", s.Value)
+	}
 }
