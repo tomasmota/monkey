@@ -3,8 +3,9 @@ package object
 import (
 	"bytes"
 	"fmt"
-	"monkey/ast"
 	"strings"
+
+	"monkey/ast"
 )
 
 type ObjectType string
@@ -18,6 +19,7 @@ const (
 	FUNCTION_OBJ     = "FUNCTION"
 	STRING_OBJ       = "STRING"
 	BUILTIN_OBJ      = "BUILTIN"
+	ARRAY_OBJ        = "ARRAY"
 )
 
 type Object interface {
@@ -39,8 +41,7 @@ type Boolean struct {
 func (b *Boolean) Inspect() string  { return fmt.Sprintf("%t", b.Value) }
 func (b *Boolean) Type() ObjectType { return BOOLEAN_OBJ }
 
-type Null struct {
-}
+type Null struct{}
 
 func (n *Null) Inspect() string  { return "null" }
 func (n *Null) Type() ObjectType { return NULL_OBJ }
@@ -91,10 +92,32 @@ type String struct {
 func (s *String) Inspect() string  { return s.Value }
 func (s *String) Type() ObjectType { return STRING_OBJ }
 
-type BuiltinFunction func(args ...Object) Object
-type Builtin struct {
-	Fn BuiltinFunction
-}
+type (
+	BuiltinFunction func(args ...Object) Object
+	Builtin         struct {
+		Fn BuiltinFunction
+	}
+)
 
 func (s *Builtin) Inspect() string  { return "builtin function" }
 func (s *Builtin) Type() ObjectType { return BUILTIN_OBJ }
+
+type Array struct {
+	Elements []Object
+}
+
+func (ao *Array) Inspect() string {
+	var out bytes.Buffer
+
+	elements := []string{}
+	for _, e := range ao.Elements {
+		elements = append(elements, e.Inspect())
+	}
+
+	out.WriteString("[")
+	out.WriteString(strings.Join(elements, ", "))
+	out.WriteString("]")
+
+	return out.String()
+}
+func (ao *Array) Type() ObjectType { return ARRAY_OBJ }

@@ -2,10 +2,11 @@ package parser
 
 import (
 	"fmt"
+	"strconv"
+
 	"monkey/ast"
 	"monkey/lexer"
 	"monkey/token"
-	"strconv"
 )
 
 // These constants define our operator precedence
@@ -18,6 +19,7 @@ const (
 	PRODUCT     // *
 	PREFIX      // -X or !X
 	CALL        // myFunction(X)
+	INDEX       // array[index]
 )
 
 var precedences = map[token.TokenType]int{
@@ -30,6 +32,7 @@ var precedences = map[token.TokenType]int{
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
 	token.LPAREN:   CALL,
+	token.LBRACKET: INDEX,
 }
 
 type Parser struct {
@@ -57,6 +60,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.TRUE, p.parseBoolean)
 	p.registerPrefix(token.FALSE, p.parseBoolean)
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
+	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
 	p.registerPrefix(token.IF, p.parseIfExpression)
 	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
 	p.registerPrefix(token.STRING, p.parseStringLiteral)
@@ -70,6 +74,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.GT, p.parseInfixExpression)
 	p.registerInfix(token.EQ, p.parseInfixExpression)
 	p.registerInfix(token.NOT_EQ, p.parseInfixExpression)
+	p.registerInfix(token.LBRACKET, p.parseIndexExpression)
 
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
 
@@ -392,33 +397,33 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 // ****** Parsing Function Calls ******//
 func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 	exp := &ast.CallExpression{Token: p.curToken, Function: function}
-	exp.Arguments = p.parseCallArguments()
+	exp.Arguments = p.parseExpressionList(token.RPAREN)
 	return exp
 }
 
-func (p *Parser) parseCallArguments() []ast.Expression {
-	args := []ast.Expression{}
+// ****************************************//
 
-	// check if there are no args
-	if p.peekTokenIs(token.RPAREN) {
-		p.NextToken()
-		return args
-	}
+// ****** Parsing Array Literals ******//
+func (p *Parser) parseArrayLiteral() ast.Expression {
+	array := &ast.ArrayLiteral{Token: p.curToken}
+	array.Elements = p.parseExpressionList(token.RBRACKET)
+	return array
+}
 
-	// skip '('
+// ****************************************//
+
+// ****** Parsing Index Expressions ******//
+func (p *Parser) parseIndexExpression(left ast.Expression) ast.Expression {
+	exp := &ast.IndexExpression{Token: p.curToken, Left: left}
+
 	p.NextToken()
-	args = append(args, p.parseExpression(LOWEST))
-	for p.peekTokenIs(token.COMMA) {
-		p.NextToken() // go to comma
-		p.NextToken() // skip comma
-		args = append(args, p.parseExpression(LOWEST))
-	}
+	exp.Index = p.parseExpression(LOWEST)
 
-	// make sure it ends with ')'
-	if !p.expectPeek(token.RPAREN) {
+	if !p.expectPeek(token.RBRACKET) {
 		return nil
 	}
-	return args
+
+	return exp
 }
 
 // ****************************************//
@@ -464,6 +469,30 @@ func (p *Parser) curPrecedence() int {
 func (p *Parser) noPrefixParseFnError(t token.TokenType) {
 	msg := fmt.Sprintf("no prefix parse function for %s", t)
 	p.errors = append(p.errors, msg)
+}
+
+func (p *Parser) parseExpressionList(end token.TokenType) []ast.Expression {
+	list := []ast.Expression{}
+
+	if p.peekTokenIs(end) {
+		p.NextToken()
+		return list
+	}
+
+	p.NextToken()
+	list = append(list, p.parseExpression(LOWEST))
+
+	for p.peekTokenIs(token.COMMA) {
+		p.NextToken()
+		p.NextToken()
+		list = append(list, p.parseExpression(LOWEST))
+	}
+
+	if !p.expectPeek(end) {
+		return nil
+	}
+
+	return list
 }
 
 // ****************************//
